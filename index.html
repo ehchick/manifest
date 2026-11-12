@@ -5,44 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>МАНИФЕСТ — генератор случайных мыслей</title>
 
+  <!-- FAVICON: встроенная SVG-иконка (data URI) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23FF2E2E'/%3E%3Ctext x='50' y='72' font-family='Georgia,serif' font-size='68' font-weight='700' fill='%23FAFAFA' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 
   <style>
     /* ============================================================
-       1. СБРОС + ПЕРЕМЕННЫЕ (правило 3 цветов)
+       1. СБРОС + ЦВЕТОВЫЕ ПЕРЕМЕННЫЕ (правило 3 цветов)
        ============================================================ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    /* СВЕТЛАЯ ТЕМА (по умолчанию) */
     :root {
-      --black: #0A0A0A;
-      --white: #FAFAFA;
-      --red:   #FF2E2E;
-      --line:  2px solid var(--black);
+      --bg:      #FAFAFA;
+      --fg:      #0A0A0A;
+      --accent:  #FF2E2E;
+      --muted:   #666;
+      --faint:   #eee;
+      --line:    2px solid var(--fg);
     }
 
-    html, body { height: 100%; }
+    /* ТЁМНАЯ ТЕМА: инвертируем фон и текст, акцент оставляем */
+    [data-theme="dark"] {
+      --bg:      #0A0A0A;
+      --fg:      #FAFAFA;
+      --accent:  #FF2E2E;
+      --muted:   #aaa;
+      --faint:   #222;
+      --line:    2px solid var(--fg);
+    }
+
+    html { background: var(--bg); }
 
     body {
       font-family: 'Space Grotesk', -apple-system, sans-serif;
-      background: var(--white);
-      color: var(--black);
+      background: var(--bg);
+      color: var(--fg);
       display: grid;
-      grid-template-rows: auto 1fr auto; /* header / сцена / футер */
+      grid-template-rows: auto 1fr auto;
       min-height: 100vh;
       overflow-x: hidden;
+      transition: background 0.25s ease, color 0.25s ease;
     }
 
     /* ============================================================
-       2. ВЕРХНЯЯ ПАНЕЛЬ (бренд + номер выпуска)
+       2. ВЕРХНЯЯ ПАНЕЛЬ
        ============================================================ */
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 32px;
+      padding: 16px 32px;
       border-bottom: var(--line);
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .brand {
@@ -51,28 +70,55 @@
       letter-spacing: -0.5px;
       text-transform: uppercase;
     }
-    .brand .dot { color: var(--red); }
+    .brand .dot { color: var(--accent); }
 
-    .meta {
+    .controls {
       display: flex;
-      gap: 10px;
-      align-items: baseline;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Переключатель языка: две кнопки */
+    .lang-switch {
+      display: flex;
+      border: 1px solid var(--fg);
+      overflow: hidden;
+    }
+    .lang-switch button {
+      background: transparent;
+      color: var(--fg);
+      border: none;
+      padding: 6px 12px;
+      font-family: inherit;
       font-size: 11px;
+      font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: #666;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
     }
-    .meta .issue {
-      color: var(--black);
-      font-weight: 700;
-      font-family: 'Instrument Serif', serif;
-      font-size: 22px;
-      font-style: italic;
-      letter-spacing: 0;
+    .lang-switch button.active {
+      background: var(--fg);
+      color: var(--bg);
     }
 
+    /* Кнопка темы: иконка солнца / луны */
+    .theme-btn {
+      background: transparent;
+      border: 1px solid var(--fg);
+      color: var(--fg);
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .theme-btn:hover { background: var(--fg); color: var(--bg); }
+
     /* ============================================================
-       3. СЦЕНА С ЦИТАТОЙ
+       3. СЦЕНА
        ============================================================ */
     .stage {
       display: flex;
@@ -87,33 +133,31 @@
       width: 100%;
       border: var(--line);
       padding: 48px 56px;
-      background: var(--white);
-      transition: transform 0.25s ease, opacity 0.25s ease;
+      background: var(--bg);
+      transition: transform 0.25s ease, opacity 0.25s ease, background 0.25s ease;
     }
 
-    /* красный квадрат сверху-слева — как метка на печати */
     .quote-card::before {
       content: '';
       position: absolute;
       top: -10px; left: -10px;
       width: 36px; height: 36px;
-      background: var(--red);
+      background: var(--accent);
       z-index: -1;
     }
-    /* черный квадрат снизу-справа */
     .quote-card::after {
       content: '';
       position: absolute;
       bottom: -10px; right: -10px;
       width: 36px; height: 36px;
-      background: var(--black);
+      background: var(--fg);
       z-index: -1;
     }
 
     .label {
       display: inline-block;
-      background: var(--black);
-      color: var(--white);
+      background: var(--fg);
+      color: var(--bg);
       padding: 5px 12px;
       font-size: 10px;
       letter-spacing: 3px;
@@ -123,23 +167,22 @@
 
     .quote {
       font-family: 'Instrument Serif', Georgia, serif;
-      font-size: clamp(28px, 4.5vw, 54px);
-      line-height: 1.05;
+      font-size: clamp(26px, 4.2vw, 52px);
+      line-height: 1.06;
       letter-spacing: -0.02em;
       margin-bottom: 32px;
       font-weight: 400;
     }
 
-    /* типографские кавычки красным через псевдоэлементы */
-    .quote::before { content: '« '; color: var(--red); }
-    .quote::after  { content: ' »'; color: var(--red); }
+    .quote::before { content: '« '; color: var(--accent); }
+    .quote::after  { content: ' »'; color: var(--accent); }
 
     .author {
       display: inline-block;
       font-family: 'Instrument Serif', serif;
       font-style: italic;
       font-size: 22px;
-      color: var(--red);
+      color: var(--accent);
       border-top: var(--line);
       padding-top: 14px;
       min-width: 240px;
@@ -147,12 +190,9 @@
     .author::before { content: '— '; }
 
     /* ============================================================
-       4. ФУТЕР: кнопка + подпись
+       4. ФУТЕР
        ============================================================ */
-    .footer {
-      display: flex;
-      flex-direction: column;
-    }
+    .footer { display: flex; flex-direction: column; }
 
     .btn {
       display: flex;
@@ -161,8 +201,8 @@
       width: 100%;
       padding: 26px 32px;
       border: none;
-      background: var(--red);
-      color: var(--white);
+      background: var(--accent);
+      color: #fff;
       font-family: 'Space Grotesk', sans-serif;
       font-weight: 700;
       font-size: 16px;
@@ -171,13 +211,10 @@
       cursor: pointer;
       transition: background 0.2s, letter-spacing 0.3s;
     }
-    .btn:hover { background: var(--black); letter-spacing: 4px; }
+    .btn:hover { background: var(--fg); color: var(--bg); letter-spacing: 4px; }
     .btn:disabled { opacity: 0.6; cursor: wait; }
 
-    .btn .arrow {
-      font-size: 22px;
-      transition: transform 0.25s;
-    }
+    .btn .arrow { font-size: 22px; transition: transform 0.25s; }
     .btn:hover .arrow { transform: translateX(8px); }
 
     .credit {
@@ -189,34 +226,37 @@
       font-size: 10px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: #888;
-      border-top: 1px solid #eee;
+      color: var(--muted);
+      border-top: 1px solid var(--faint);
     }
 
-    /* ============================================================
-       5. АДАПТИВ
-       ============================================================ */
     @media (max-width: 600px) {
-      .topbar { padding: 16px 20px; }
+      .topbar { padding: 12px 16px; gap: 8px; }
+      .brand { font-size: 18px; }
       .stage  { padding: 28px 16px; }
       .quote-card { padding: 32px 24px; }
       .btn    { padding: 22px 20px; font-size: 14px; letter-spacing: 2px; }
       .credit { padding: 10px 20px; font-size: 9px; }
+      .lang-switch button { padding: 6px 9px; font-size: 10px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ВЕРХ -->
+  <!-- ВЕРХ: бренд + переключатели -->
   <header class="topbar">
     <div class="brand">МАНИФЕСТ<span class="dot">.</span></div>
-    <div class="meta">
-      <span>Выпуск</span>
-      <span class="issue" id="issue">№ 000</span>
+
+    <div class="controls">
+      <div class="lang-switch" id="langSwitch">
+        <button data-lang="ru" class="active">RU</button>
+        <button data-lang="en">EN</button>
+      </div>
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="Переключить тему">🌙</button>
     </div>
   </header>
 
-  <!-- ЦЕНТР: карточка -->
+  <!-- ЦЕНТР -->
   <main class="stage">
     <article class="quote-card" id="card">
       <div class="label">Случайная мысль</div>
@@ -232,64 +272,110 @@
       <span class="arrow">→</span>
     </button>
     <div class="credit">
-      <span>API: dummyjson.com</span>
+      <span id="sourceLabel">Локальная коллекция</span>
       <span>Сделано вручную · 2026</span>
     </div>
   </footer>
 
   <script>
     // ============================================================
-    // 1. Получаем элементы страницы по id
+    // 1. ЭЛЕМЕНТЫ
     // ============================================================
-    const quoteEl  = document.getElementById('quote');
-    const authorEl = document.getElementById('author');
-    const issueEl  = document.getElementById('issue');
-    const card     = document.getElementById('card');
-    const btn      = document.getElementById('btn');
+    const quoteEl    = document.getElementById('quote');
+    const authorEl   = document.getElementById('author');
+    const card       = document.getElementById('card');
+    const btn        = document.getElementById('btn');
+    const themeBtn   = document.getElementById('themeBtn');
+    const langSwitch = document.getElementById('langSwitch');
+    const sourceLabel = document.getElementById('sourceLabel');
 
-    let issueNumber = 0;
+    // ============================================================
+    // 2. ТЁМНАЯ ТЕМА
+    // ============================================================
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('theme', theme);
+    }
+
+    // При загрузке: берём сохранённую тему, иначе светлая
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
+
+    themeBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
 
     // ============================================================
-    // 2. Локальный запас — если API упадёт, сайт не сломается
+    // 3. РУССКИЕ ЦИТАТЫ (локальная коллекция)
     // ============================================================
-    const fallback = [
-      { quote: "Единственный способ делать великую работу — любить то, что ты делаешь.", author: "Стив Джобс" },
-      { quote: "Простота — высшая степень изощрённости.", author: "Леонардо да Винчи" },
-      { quote: "Тот, кто сдвигает горы, начинает с малых камней.", author: "Конфуций" },
-      { quote: "Жизнь — это то, что случается с тобой, пока ты строишь планы.", author: "Джон Леннон" },
-      { quote: "Мы то, что мы делаем постоянно. Совершенство — не действие, а привычка.", author: "Аристотель" }
+    const ruQuotes = [
+      { quote: "Краткость — сестра таланта.", author: "Антон Чехов" },
+      { quote: "Красота спасёт мир.", author: "Фёдор Достоевский" },
+      { quote: "Все счастливые семьи похожи друг на друга, каждая несчастливая семья несчастлива по-своему.", author: "Лев Толстой" },
+      { quote: "Я помню чудное мгновенье: передо мной явилась ты.", author: "Александр Пушкин" },
+      { quote: "Умом Россию не понять, аршином общим не измерить.", author: "Фёдор Тютчев" },
+      { quote: "Человек — это звучит гордо.", author: "Максим Горький" },
+      { quote: "Счастье не в том, чтобы делать всегда, что хочешь, а в том, чтобы всегда хотеть того, что делаешь.", author: "Лев Толстой" },
+      { quote: "Нет ничего сильнее слова.", author: "Антон Чехов" },
+      { quote: "Гений и злодейство — две вещи несовместные.", author: "Александр Пушкин" },
+      { quote: "Кто не любит природы, тот не любит человека.", author: "Фёдор Достоевский" }
+    ];
+
+    // Английский запас на случай сбоя API
+    const enFallback = [
+      { quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+      { quote: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
+      { quote: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+      { quote: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
+      { quote: "Life is what happens when you're busy making other plans.", author: "John Lennon" }
     ];
 
     // ============================================================
-    // 3. Запрос к API через fetch + async/await
+    // 4. СОСТОЯНИЕ
     // ============================================================
-    async function fetchQuote() {
+    let currentLang = 'ru'; // 'ru' или 'en'
+
+    // ============================================================
+    // 5. ПОЛУЧЕНИЕ ЦИТАТЫ
+    // ============================================================
+    async function fetchEnglishQuote() {
       try {
         const res = await fetch('https://dummyjson.com/quotes/random');
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         return { quote: data.quote, author: data.author };
       } catch (err) {
-        console.warn('API недоступен → используем локальный запас:', err);
-        return fallback[Math.floor(Math.random() * fallback.length)];
+        console.warn('EN API недоступен → локальный запас:', err);
+        return enFallback[Math.floor(Math.random() * enFallback.length)];
       }
     }
 
+    function getRussianQuote() {
+      return ruQuotes[Math.floor(Math.random() * ruQuotes.length)];
+    }
+
     // ============================================================
-    // 4. Показать новую цитату с анимацией и обновить номер
+    // 6. ПОКАЗ НОВОЙ ЦИТАТЫ
     // ============================================================
     async function showNewQuote() {
       btn.disabled = true;
       card.style.opacity = '0.5';
       card.style.transform = 'translateY(6px)';
 
-      const data = await fetchQuote();
-      issueNumber++;
+      let data;
+      if (currentLang === 'ru') {
+        data = getRussianQuote();
+        sourceLabel.textContent = 'Русская классика · локальная коллекция';
+      } else {
+        data = await fetchEnglishQuote();
+        sourceLabel.textContent = 'API: dummyjson.com';
+      }
 
       setTimeout(() => {
         quoteEl.textContent  = data.quote;
         authorEl.textContent = data.author;
-        issueEl.textContent  = '№ ' + String(issueNumber).padStart(3, '0');
 
         card.style.opacity = '1';
         card.style.transform = 'translateY(0)';
@@ -298,7 +384,31 @@
     }
 
     // ============================================================
-    // 5. События: клик по кнопке и первая загрузка
+    // 7. ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА
+    // ============================================================
+    langSwitch.addEventListener('click', (e) => {
+      const target = e.target.closest('button');
+      if (!target) return;
+
+      const lang = target.dataset.lang;
+      if (lang === currentLang) return;
+
+      currentLang = lang;
+
+      // Подсветка активной кнопки
+      langSwitch.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.dataset.lang === lang);
+      });
+
+      // Меняем подпись кнопки
+      btn.querySelector('span:first-child').textContent =
+        lang === 'ru' ? 'Новая цитата' : 'New quote';
+
+      showNewQuote();
+    });
+
+    // ============================================================
+    // 8. СТАРТ
     // ============================================================
     btn.addEventListener('click', showNewQuote);
     showNewQuote();
