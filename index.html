@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>МАНИФЕСТ — генератор случайных мыслей</title>
 
-  <!-- FAVICON: встроенная SVG-иконка (data URI) -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23FF2E2E'/%3E%3Ctext x='50' y='72' font-family='Georgia,serif' font-size='68' font-weight='700' fill='%23FAFAFA' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,24 +17,22 @@
        ============================================================ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* СВЕТЛАЯ ТЕМА (по умолчанию) */
     :root {
-      --bg:      #FAFAFA;
-      --fg:      #0A0A0A;
-      --accent:  #FF2E2E;
-      --muted:   #666;
-      --faint:   #eee;
-      --line:    2px solid var(--fg);
+      --bg:     #FAFAFA;
+      --fg:     #0A0A0A;
+      --accent: #FF2E2E;
+      --muted:  #666;
+      --faint:  #eee;
+      --line:   2px solid var(--fg);
     }
 
-    /* ТЁМНАЯ ТЕМА: инвертируем фон и текст, акцент оставляем */
     [data-theme="dark"] {
-      --bg:      #0A0A0A;
-      --fg:      #FAFAFA;
-      --accent:  #FF2E2E;
-      --muted:   #aaa;
-      --faint:   #222;
-      --line:    2px solid var(--fg);
+      --bg:     #0A0A0A;
+      --fg:     #FAFAFA;
+      --accent: #FF2E2E;
+      --muted:  #aaa;
+      --faint:  #222;
+      --line:   2px solid var(--fg);
     }
 
     html { background: var(--bg); }
@@ -78,7 +75,6 @@
       gap: 8px;
     }
 
-    /* Переключатель языка: две кнопки */
     .lang-switch {
       display: flex;
       border: 1px solid var(--fg);
@@ -102,7 +98,6 @@
       color: var(--bg);
     }
 
-    /* Кнопка темы: иконка солнца / луны */
     .theme-btn {
       background: transparent;
       border: 1px solid var(--fg);
@@ -190,7 +185,46 @@
     .author::before { content: '— '; }
 
     /* ============================================================
-       4. ФУТЕР
+       4. ПЛАШКА ПЕРЕВОДА
+       ============================================================ */
+    .translation {
+      margin-top: 28px;
+      padding: 14px 18px;
+      background: var(--faint);
+      border-left: 3px solid var(--accent);
+    }
+    .translation[hidden] { display: none; }
+
+    .translation-label {
+      display: inline-block;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .translation-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--muted);
+      font-style: italic;
+      transition: opacity 0.2s ease;
+    }
+
+    /* Состояние загрузки перевода */
+    .translation-text.loading {
+      animation: pulse 1.3s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.35; }
+      50%      { opacity: 0.85; }
+    }
+
+    /* ============================================================
+       5. ФУТЕР
        ============================================================ */
     .footer { display: flex; flex-direction: column; }
 
@@ -238,15 +272,15 @@
       .btn    { padding: 22px 20px; font-size: 14px; letter-spacing: 2px; }
       .credit { padding: 10px 20px; font-size: 9px; }
       .lang-switch button { padding: 6px 9px; font-size: 10px; }
+      .translation { padding: 12px 14px; }
+      .translation-text { font-size: 14px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ВЕРХ: бренд + переключатели -->
   <header class="topbar">
     <div class="brand">МАНИФЕСТ<span class="dot">.</span></div>
-
     <div class="controls">
       <div class="lang-switch" id="langSwitch">
         <button data-lang="ru" class="active">RU</button>
@@ -256,16 +290,20 @@
     </div>
   </header>
 
-  <!-- ЦЕНТР -->
   <main class="stage">
     <article class="quote-card" id="card">
       <div class="label">Случайная мысль</div>
       <blockquote class="quote" id="quote">Загрузка...</blockquote>
       <div class="author" id="author">...</div>
+
+      <!-- ПЛАШКА ПЕРЕВОДА -->
+      <div class="translation" id="translation" hidden>
+        <span class="translation-label">Перевод · MyMemory</span>
+        <p class="translation-text" id="translationText"></p>
+      </div>
     </article>
   </main>
 
-  <!-- НИЗ -->
   <footer class="footer">
     <button class="btn" id="btn" type="button">
       <span>Новая цитата</span>
@@ -281,13 +319,15 @@
     // ============================================================
     // 1. ЭЛЕМЕНТЫ
     // ============================================================
-    const quoteEl    = document.getElementById('quote');
-    const authorEl   = document.getElementById('author');
-    const card       = document.getElementById('card');
-    const btn        = document.getElementById('btn');
-    const themeBtn   = document.getElementById('themeBtn');
-    const langSwitch = document.getElementById('langSwitch');
-    const sourceLabel = document.getElementById('sourceLabel');
+    const quoteEl         = document.getElementById('quote');
+    const authorEl        = document.getElementById('author');
+    const card            = document.getElementById('card');
+    const btn             = document.getElementById('btn');
+    const themeBtn        = document.getElementById('themeBtn');
+    const langSwitch      = document.getElementById('langSwitch');
+    const sourceLabel     = document.getElementById('sourceLabel');
+    const translation     = document.getElementById('translation');
+    const translationText = document.getElementById('translationText');
 
     // ============================================================
     // 2. ТЁМНАЯ ТЕМА
@@ -297,10 +337,7 @@
       themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
       localStorage.setItem('theme', theme);
     }
-
-    // При загрузке: берём сохранённую тему, иначе светлая
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    applyTheme(savedTheme);
+    applyTheme(localStorage.getItem('theme') || 'light');
 
     themeBtn.addEventListener('click', () => {
       const current = document.documentElement.getAttribute('data-theme');
@@ -323,22 +360,42 @@
       { quote: "Кто не любит природы, тот не любит человека.", author: "Фёдор Достоевский" }
     ];
 
-    // Английский запас на случай сбоя API
+    // Английский запас — с готовыми переводами (если API лягут)
     const enFallback = [
-      { quote: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-      { quote: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
-      { quote: "It always seems impossible until it's done.", author: "Nelson Mandela" },
-      { quote: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
-      { quote: "Life is what happens when you're busy making other plans.", author: "John Lennon" }
+      {
+        quote: "The only way to do great work is to love what you do.",
+        author: "Steve Jobs",
+        ru: "Единственный способ делать великую работу — любить то, что ты делаешь."
+      },
+      {
+        quote: "Simplicity is the ultimate sophistication.",
+        author: "Leonardo da Vinci",
+        ru: "Простота — высшая степень изощрённости."
+      },
+      {
+        quote: "It always seems impossible until it's done.",
+        author: "Nelson Mandela",
+        ru: "Всё кажется невозможным, пока это не будет сделано."
+      },
+      {
+        quote: "The journey of a thousand miles begins with a single step.",
+        author: "Lao Tzu",
+        ru: "Путь в тысячу миль начинается с одного шага."
+      },
+      {
+        quote: "Life is what happens when you're busy making other plans.",
+        author: "John Lennon",
+        ru: "Жизнь — это то, что случается с тобой, пока ты строишь планы."
+      }
     ];
 
     // ============================================================
     // 4. СОСТОЯНИЕ
     // ============================================================
-    let currentLang = 'ru'; // 'ru' или 'en'
+    let currentLang = 'ru';
 
     // ============================================================
-    // 5. ПОЛУЧЕНИЕ ЦИТАТЫ
+    // 5. API-ЗАПРОСЫ
     // ============================================================
     async function fetchEnglishQuote() {
       try {
@@ -347,8 +404,34 @@
         const data = await res.json();
         return { quote: data.quote, author: data.author };
       } catch (err) {
-        console.warn('EN API недоступен → локальный запас:', err);
+        console.warn('EN API недоступен → fallback:', err);
         return enFallback[Math.floor(Math.random() * enFallback.length)];
+      }
+    }
+
+    async function translateToRussian(text) {
+      try {
+        const url = 'https://api.mymemory.translated.net/get'
+                  + '?q=' + encodeURIComponent(text)
+                  + '&langpair=en|ru';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        if (data.responseStatus !== 200) {
+          throw new Error('Translation failed: ' + data.responseStatus);
+        }
+
+        const translated = data.responseData.translatedText;
+
+        // Защита: если сервис вернул тот же текст — значит перевода нет
+        if (!translated || translated.trim().toLowerCase() === text.trim().toLowerCase()) {
+          return null;
+        }
+        return translated;
+      } catch (err) {
+        console.warn('Перевод недоступен:', err);
+        return null;
       }
     }
 
@@ -357,7 +440,30 @@
     }
 
     // ============================================================
-    // 6. ПОКАЗ НОВОЙ ЦИТАТЫ
+    // 6. ПОКАЗ ПЕРЕВОДА (с защитой от гонок)
+    // ============================================================
+    async function showTranslation(text, predefinedTranslation) {
+      translation.hidden = false;
+      translationText.classList.add('loading');
+      translationText.textContent = predefinedTranslation || 'Перевод загружается…';
+
+      let result = predefinedTranslation;
+
+      if (!result) {
+        result = await translateToRussian(text);
+
+        // Проверка на гонку: пока грузился перевод, юзер мог сменить цитату/язык
+        if (quoteEl.textContent !== text) return;
+      }
+
+      translationText.classList.remove('loading');
+      translationText.textContent = result
+        ? result
+        : 'Перевод временно недоступен. Нажмите «Новая цитата».';
+    }
+
+    // ============================================================
+    // 7. ПОКАЗ НОВОЙ ЦИТАТЫ
     // ============================================================
     async function showNewQuote() {
       btn.disabled = true;
@@ -365,12 +471,17 @@
       card.style.transform = 'translateY(6px)';
 
       let data;
+      let predefinedTranslation = null;
+
       if (currentLang === 'ru') {
         data = getRussianQuote();
         sourceLabel.textContent = 'Русская классика · локальная коллекция';
+        translation.hidden = true;
       } else {
         data = await fetchEnglishQuote();
-        sourceLabel.textContent = 'API: dummyjson.com';
+        sourceLabel.textContent = 'API: dummyjson.com · перевод MyMemory';
+        // Если цитата пришла из fallback — у неё уже есть перевод
+        predefinedTranslation = data.ru || null;
       }
 
       setTimeout(() => {
@@ -380,11 +491,16 @@
         card.style.opacity = '1';
         card.style.transform = 'translateY(0)';
         btn.disabled = false;
+
+        // Переводим ПОСЛЕ показа цитаты — не блокируем UI
+        if (currentLang === 'en') {
+          showTranslation(data.quote, predefinedTranslation);
+        }
       }, 200);
     }
 
     // ============================================================
-    // 7. ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА
+    // 8. ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА
     // ============================================================
     langSwitch.addEventListener('click', (e) => {
       const target = e.target.closest('button');
@@ -395,12 +511,10 @@
 
       currentLang = lang;
 
-      // Подсветка активной кнопки
       langSwitch.querySelectorAll('button').forEach(b => {
         b.classList.toggle('active', b.dataset.lang === lang);
       });
 
-      // Меняем подпись кнопки
       btn.querySelector('span:first-child').textContent =
         lang === 'ru' ? 'Новая цитата' : 'New quote';
 
@@ -408,7 +522,7 @@
     });
 
     // ============================================================
-    // 8. СТАРТ
+    // 9. СТАРТ
     // ============================================================
     btn.addEventListener('click', showNewQuote);
     showNewQuote();
