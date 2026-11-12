@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>МАНИФЕСТ — генератор случайных мыслей</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================================
+       1. СБРОС + ПЕРЕМЕННЫЕ (правило 3 цветов)
+       ============================================================ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --black: #0A0A0A;
+      --white: #FAFAFA;
+      --red:   #FF2E2E;
+      --line:  2px solid var(--black);
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--black);
+      display: grid;
+      grid-template-rows: auto 1fr auto; /* header / сцена / футер */
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ============================================================
+       2. ВЕРХНЯЯ ПАНЕЛЬ (бренд + номер выпуска)
+       ============================================================ */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 32px;
+      border-bottom: var(--line);
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+    }
+    .brand .dot { color: var(--red); }
+
+    .meta {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #666;
+    }
+    .meta .issue {
+      color: var(--black);
+      font-weight: 700;
+      font-family: 'Instrument Serif', serif;
+      font-size: 22px;
+      font-style: italic;
+      letter-spacing: 0;
+    }
+
+    /* ============================================================
+       3. СЦЕНА С ЦИТАТОЙ
+       ============================================================ */
+    .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+    }
+
+    .quote-card {
+      position: relative;
+      max-width: 880px;
+      width: 100%;
+      border: var(--line);
+      padding: 48px 56px;
+      background: var(--white);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+
+    /* красный квадрат сверху-слева — как метка на печати */
+    .quote-card::before {
+      content: '';
+      position: absolute;
+      top: -10px; left: -10px;
+      width: 36px; height: 36px;
+      background: var(--red);
+      z-index: -1;
+    }
+    /* черный квадрат снизу-справа */
+    .quote-card::after {
+      content: '';
+      position: absolute;
+      bottom: -10px; right: -10px;
+      width: 36px; height: 36px;
+      background: var(--black);
+      z-index: -1;
+    }
+
+    .label {
+      display: inline-block;
+      background: var(--black);
+      color: var(--white);
+      padding: 5px 12px;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .quote {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(28px, 4.5vw, 54px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 32px;
+      font-weight: 400;
+    }
+
+    /* типографские кавычки красным через псевдоэлементы */
+    .quote::before { content: '« '; color: var(--red); }
+    .quote::after  { content: ' »'; color: var(--red); }
+
+    .author {
+      display: inline-block;
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-size: 22px;
+      color: var(--red);
+      border-top: var(--line);
+      padding-top: 14px;
+      min-width: 240px;
+    }
+    .author::before { content: '— '; }
+
+    /* ============================================================
+       4. ФУТЕР: кнопка + подпись
+       ============================================================ */
+    .footer {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 26px 32px;
+      border: none;
+      background: var(--red);
+      color: var(--white);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, letter-spacing 0.3s;
+    }
+    .btn:hover { background: var(--black); letter-spacing: 4px; }
+    .btn:disabled { opacity: 0.6; cursor: wait; }
+
+    .btn .arrow {
+      font-size: 22px;
+      transition: transform 0.25s;
+    }
+    .btn:hover .arrow { transform: translateX(8px); }
+
+    .credit {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 32px;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #888;
+      border-top: 1px solid #eee;
+    }
+
+    /* ============================================================
+       5. АДАПТИВ
+       ============================================================ */
+    @media (max-width: 600px) {
+      .topbar { padding: 16px 20px; }
+      .stage  { padding: 28px 16px; }
+      .quote-card { padding: 32px 24px; }
+      .btn    { padding: 22px 20px; font-size: 14px; letter-spacing: 2px; }
+      .credit { padding: 10px 20px; font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ВЕРХ -->
+  <header class="topbar">
+    <div class="brand">МАНИФЕСТ<span class="dot">.</span></div>
+    <div class="meta">
+      <span>Выпуск</span>
+      <span class="issue" id="issue">№ 000</span>
+    </div>
+  </header>
+
+  <!-- ЦЕНТР: карточка -->
+  <main class="stage">
+    <article class="quote-card" id="card">
+      <div class="label">Случайная мысль</div>
+      <blockquote class="quote" id="quote">Загрузка...</blockquote>
+      <div class="author" id="author">...</div>
+    </article>
+  </main>
+
+  <!-- НИЗ -->
+  <footer class="footer">
+    <button class="btn" id="btn" type="button">
+      <span>Новая цитата</span>
+      <span class="arrow">→</span>
+    </button>
+    <div class="credit">
+      <span>API: dummyjson.com</span>
+      <span>Сделано вручную · 2026</span>
+    </div>
+  </footer>
+
+  <script>
+    // ============================================================
+    // 1. Получаем элементы страницы по id
+    // ============================================================
+    const quoteEl  = document.getElementById('quote');
+    const authorEl = document.getElementById('author');
+    const issueEl  = document.getElementById('issue');
+    const card     = document.getElementById('card');
+    const btn      = document.getElementById('btn');
+
+    let issueNumber = 0;
+
+    // ============================================================
+    // 2. Локальный запас — если API упадёт, сайт не сломается
+    // ============================================================
+    const fallback = [
+      { quote: "Единственный способ делать великую работу — любить то, что ты делаешь.", author: "Стив Джобс" },
+      { quote: "Простота — высшая степень изощрённости.", author: "Леонардо да Винчи" },
+      { quote: "Тот, кто сдвигает горы, начинает с малых камней.", author: "Конфуций" },
+      { quote: "Жизнь — это то, что случается с тобой, пока ты строишь планы.", author: "Джон Леннон" },
+      { quote: "Мы то, что мы делаем постоянно. Совершенство — не действие, а привычка.", author: "Аристотель" }
+    ];
+
+    // ============================================================
+    // 3. Запрос к API через fetch + async/await
+    // ============================================================
+    async function fetchQuote() {
+      try {
+        const res = await fetch('https://dummyjson.com/quotes/random');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        return { quote: data.quote, author: data.author };
+      } catch (err) {
+        console.warn('API недоступен → используем локальный запас:', err);
+        return fallback[Math.floor(Math.random() * fallback.length)];
+      }
+    }
+
+    // ============================================================
+    // 4. Показать новую цитату с анимацией и обновить номер
+    // ============================================================
+    async function showNewQuote() {
+      btn.disabled = true;
+      card.style.opacity = '0.5';
+      card.style.transform = 'translateY(6px)';
+
+      const data = await fetchQuote();
+      issueNumber++;
+
+      setTimeout(() => {
+        quoteEl.textContent  = data.quote;
+        authorEl.textContent = data.author;
+        issueEl.textContent  = '№ ' + String(issueNumber).padStart(3, '0');
+
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+        btn.disabled = false;
+      }, 200);
+    }
+
+    // ============================================================
+    // 5. События: клик по кнопке и первая загрузка
+    // ============================================================
+    btn.addEventListener('click', showNewQuote);
+    showNewQuote();
+  </script>
+</body>
+</html>
